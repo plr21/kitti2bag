@@ -21,6 +21,7 @@ from std_msgs.msg import Header
 from sensor_msgs.msg import CameraInfo, Imu, PointField, NavSatFix
 import sensor_msgs.point_cloud2 as pcl2
 from geometry_msgs.msg import TransformStamped, TwistStamped, Transform
+from geometry_msgs.msg import PoseStamped
 from cv_bridge import CvBridge
 import numpy as np
 import argparse
@@ -100,8 +101,39 @@ def save_dynamic_tf(bag, kitti, kitti_type, initial_time):
             tf_msg.transforms.append(tf_stamped)
 
             bag.write('/tf', tf_msg, tf_msg.transforms[0].header.stamp)
-          
-        
+
+            # Converting pose to proper orb-slam convetion
+            tf_mat_converted = convert_matrix_to_pose(tf_matrix)
+            t = tf_mat_converted[0:3,3]
+            q = tf.transformations.quaternion_from_matrix(tf_mat_converted)
+
+            pose_msg = PoseStamped()
+            pose_msg.header.stamp = rospy.Time.from_sec(timestamp)
+            pose_msg.header.frame_id = "map"
+            pose_msg.pose.position.x = t[0]
+            pose_msg.pose.position.y = t[1]
+            pose_msg.pose.position.z = t[2]
+            pose_msg.pose.orientation.x = q[0]
+            pose_msg.pose.orientation.y = q[1]
+            pose_msg.pose.orientation.z = q[2]
+            pose_msg.pose.orientation.w = q[3]
+
+            bag.write('kitti/gt_pose', pose_msg, pose_msg.header.stamp)
+
+
+def convert_matrix_to_pose(tf_matrix):
+    # Change convention
+    rot_mat = np.array([[0,0,1,0],
+                        [-1,0,0,0],
+                        [0,-1,0,0],
+                        [0,0,0,1]]).astype(np.float64)
+
+    transf_mat = np.matmul(rot_mat, tf_matrix)
+    transf_mat_for_rot = np.matmul(transf_mat, rot_mat.T)
+    transf_mat[0:3,0:3] = transf_mat_for_rot[0:3,0:3]
+
+    return transf_mat
+
 def save_camera_data(bag, kitti_type, kitti, util, bridge, camera, camera_frame_id, topic, initial_time):
     print("Exporting camera {}".format(camera))
     if kitti_type.find("raw") != -1:
@@ -384,4 +416,3 @@ def run_kitti2bag():
             print("## OVERVIEW ##")
             print(bag)
             bag.close()
-
