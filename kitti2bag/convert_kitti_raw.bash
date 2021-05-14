@@ -161,13 +161,13 @@ sequences_10_03=(0027
 0047
 0058)
 
-kitti2bag_path="~/plr/kitti2bag/kitti2bag/kitti2bag.py"
-input_dir="/media/dataserver/PLR-vSLAM/kitti_raw"
+kitti2bag_path="/home/sweber/kitti2bag/kitti2bag/kitti2bag.py"
+input_dir="/media/scratch2/PLR-vSLAM/kitti_raw"
 
 # 1st argument: string of date
 # other arguments: array of sequences
-function convert_to_bag() {
-	date="@1"
+convert_to_bag() {
+	date="$1"
 	sequences=("$@")
 	unset sequences[0]
 	for i in "${sequences[@]}"
