@@ -179,7 +179,7 @@ def save_camera_data(bag, kitti_type, kitti, util, bridge, camera, camera_frame_
         calib.P = util['P{}'.format(camera_pad)]
     
     iterable = zip(image_datetimes, image_filenames)
-    for dt, filename in iterable:#bar(iterable):
+    for dt, filename in iterable:
         image_filename = os.path.join(image_path, filename)
         cv_image = cv2.imread(image_filename)
         calib.height, calib.width = cv_image.shape[:2]
@@ -213,7 +213,7 @@ def save_velo_data(bag, kitti, velo_frame_id, topic):
             velo_datetimes.append(dt)
 
     iterable = zip(velo_datetimes, velo_filenames)
-    for dt, filename in iterable: #bar(iterable):
+    for dt, filename in iterable:
         if dt is None:
             continue
 
