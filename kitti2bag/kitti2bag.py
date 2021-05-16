@@ -14,7 +14,6 @@ import os
 import cv2
 import rospy
 import rosbag
-import progressbar
 from tf2_msgs.msg import TFMessage
 from datetime import datetime
 from std_msgs.msg import Header
@@ -74,6 +73,22 @@ def save_dynamic_tf(bag, kitti, kitti_type, initial_time):
             tf_oxts_msg.transforms.append(tf_oxts_transform)
 
             bag.write('/tf', tf_oxts_msg, tf_oxts_msg.transforms[0].header.stamp)
+
+            # Write pose as PoseStamped
+            pose_oxts_msg = PoseStamped()
+            pose_oxts_msg.header.stamp = rospy.Time.from_sec(float(timestamp.strftime("%s.%f")))
+            pose_oxts_msg.header.frame_id = 'map'
+
+            pose_oxts_msg.pose.position.x = t[0]
+            pose_oxts_msg.pose.position.y = t[1]
+            pose_oxts_msg.pose.position.z = t[2]
+
+            pose_oxts_msg.pose.orientation.x = q[0]
+            pose_oxts_msg.pose.orientation.y = q[1]
+            pose_oxts_msg.pose.orientation.z = q[2]
+            pose_oxts_msg.pose.orientation.w = q[3]
+
+            bag.write('kitti/gt_pose', pose_oxts_msg, pose_oxts_msg.header.stamp)
 
     elif kitti_type.find("odom") != -1:
         timestamps = map(lambda x: initial_time + x.total_seconds(), kitti.timestamps)
@@ -164,8 +179,7 @@ def save_camera_data(bag, kitti_type, kitti, util, bridge, camera, camera_frame_
         calib.P = util['P{}'.format(camera_pad)]
     
     iterable = zip(image_datetimes, image_filenames)
-    bar = progressbar.ProgressBar()
-    for dt, filename in bar(iterable):
+    for dt, filename in iterable:
         image_filename = os.path.join(image_path, filename)
         cv_image = cv2.imread(image_filename)
         calib.height, calib.width = cv_image.shape[:2]
@@ -199,8 +213,7 @@ def save_velo_data(bag, kitti, velo_frame_id, topic):
             velo_datetimes.append(dt)
 
     iterable = zip(velo_datetimes, velo_filenames)
-    bar = progressbar.ProgressBar()
-    for dt, filename in bar(iterable):
+    for dt, filename in iterable:
         if dt is None:
             continue
 
@@ -419,4 +432,3 @@ def run_kitti2bag():
 
 if __name__ == "__main__":
     run_kitti2bag()
-
